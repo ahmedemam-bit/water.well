@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferdous 6 Well - Drilling Rate Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-dark: #004080;
+            --primary-blue: #0b5394;
+            --light-blue: #e6f0fa;
+            --accent-orange: #f6b26b;
+            --danger-red: #cc0000;
+            --border-color: #b4c7e7;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Dashboard Wrapper */
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 10px auto;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Top Header */
+        .header-section {
+            background-color: var(--primary-dark);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header-title i {
+            font-size: 2rem;
+        }
+        .header-title h2 {
+            font-size: 1.4rem;
+            margin: 0;
+            font-weight: 700;
+        }
+        .header-stats {
+            display: flex;
+            gap: 12px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 5px 12px;
+            border-radius: 5px;
+            text-align: center;
+            min-width: 120px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .stat-card span {
+            font-size: 0.65rem;
+            display: block;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        .stat-card strong {
+            font-size: 1.1rem;
+            display: block;
+        }
+
+        /* Section Styling */
+        .section-title {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 5px 5px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-body {
+            background: var(--light-blue);
+            border: 2px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            padding: 10px;
+            height: calc(100% - 37px);
+        }
+
+        /* Drill Well Graph Visualization */
+        .well-vis {
+            position: relative;
+            height: 310px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .derrick-img {
+            font-size: 1.5rem;
+            color: var(--primary-dark);
+        }
+        .well-bore {
+            width: 32px;
+            flex-grow: 1;
+            background: #ddd;
+            border-left: 3px solid #666;
+            border-right: 3px solid #666;
+            position: relative;
+            margin: 8px 0;
+        }
+        .gravel-formation {
+            position: absolute;
+            top: 40%;
+            height: 30%;
+            width: 100%;
+            background: repeating-linear-gradient(45deg, #a0522d, #a0522d 5px, #8b4513 5px, #8b4513 10px);
+            color: white;
+            font-size: 0.5rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .drill-bit {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            color: #333;
+        }
+
+        /* Scrollable and Editable Table */
+        .table-responsive-custom {
+            height: 310px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        .table-custom {
+            font-size: 0.75rem;
+            margin-bottom: 0;
+        }
+        .table-custom th {
+            background-color: #f1f5f9;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--border-color);
+            text-align: center;
+            font-weight: 600;
+            padding: 6px;
+        }
+        .table-custom td {
+            padding: 3px 6px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .table-custom input {
+            width: 100%;
+            border: 1px solid transparent;
+            background: transparent;
+            text-align: center;
+            padding: 1px;
+            font-size: 0.75rem;
+        }
+        .table-custom input:focus {
+            border-color: var(--primary-blue);
+            background: #fff;
+            outline: none;
+        }
+
+        /* Timeline Events */
+        .events-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            height: 310px;
+            overflow-y: auto;
+        }
+        .event-item {
+            display: flex;
+            gap: 10px;
+            background: #fff;
+            padding: 6px 8px;
+            border-radius: 5px;
+            margin-bottom: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .event-icon {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+        }
+        .event-content p {
+            margin: 0;
+            font-size: 0.75rem;
+            line-height: 1.2;
+        }
+        .event-content strong {
+            font-size: 0.8rem;
+            color: var(--primary-dark);
+        }
+
+        /* Bottom Cards */
+        .kpi-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 6px;
+            text-align: center;
+        }
+        .kpi-val {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin: 2px 0;
+        }
+        .kpi-card small {
+            font-size: 0.7rem;
+        }
+
+        /* Inputs and Controls for App */
+        .controls-panel {
+            background: #eaeaea;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* FORCE 1-PAGE A4 LANDSCAPE PRINT STYLE */
+        @media print {
+            /* Configuration */
+            @page {
+                size: A4 landscape;
+                margin: 0.3cm;
+            }
+
+            html, body {
+                width: 297mm;
+                height: 210mm;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                overflow: hidden;
+            }
+
+            .no-print, .controls-panel, .btn-action {
+                display: none !important;
+            }
+
+            .dashboard-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 5px !important;
+                width: 100% !important;
+                height: 100% !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .header-section {
+                padding: 6px 15px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .header-title h2 {
+                font-size: 1.2rem !important;
+            }
+
+            /* Main grid fit */
+            .row.g-3 {
+                --bs-gutter-y: 8px;
+                --bs-gutter-x: 8px;
+            }
+
+            /* Make visual, table and events scroll area fully fit within standard single page */
+            .well-vis {
+                height: 250px !important;
+            }
+            .table-responsive-custom {
+                height: 250px !important;
+                overflow-y: hidden !important; /* Prevents Print Scrollbars */
+            }
+            .events-list {
+                height: 250px !important;
+                overflow-y: hidden !important;
+            }
+
+            /* Adjust visual scale and sizing */
+            .section-title {
+                padding: 5px 10px !important;
+                font-size: 0.75rem !important;
+            }
+            .section-body {
+                padding: 6px !important;
+                height: calc(100% - 29px) !important;
+            }
+
+            /* Keep Inputs Borderless & Visible */
+            input {
+                border: none !important;
+                background: transparent !important;
+                font-size: 0.7rem !important;
+                padding: 0 !important;
+            }
+
+            /* Font scaling */
+            .table-custom th {
+                font-size: 0.65rem !important;
+                padding: 2px !important;
+            }
+            .table-custom td {
+                font-size: 0.65rem !important;
+                padding: 1px 3px !important;
+            }
+
+            .event-item {
+                padding: 4px 6px !important;
+                margin-bottom: 4px !important;
+            }
+            .event-icon {
+                width: 24px !important;
+                height: 24px !important;
+                font-size: 0.75rem !important;
+            }
+            .event-content p {
+                font-size: 0.65rem !important;
+            }
+
+            /* Bottom layout sizing */
+            .kpi-card {
+                padding: 4px !important;
+            }
+            .kpi-val {
+                font-size: 1.1rem !important;
+            }
+            canvas {
+                max-height: 120px !important; /* Keep charts on the page */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid py-2 no-print">
+    <div class="controls-panel d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0"><i class="fa-solid fa-screwdriver-wrench"></i> Interactive Drill Dashboard (Ready for Single-Page Printing)</h5>
+            <p class="text-muted mb-0" style="font-size: 0.8rem;">Change values freely. Press 'Print/Save PDF' and make sure 'Landscape' is selected in the print dialog.</p>
+        </div>
+        <button onclick="window.print();" class="btn btn-primary btn-md"><i class="fa-solid fa-print"></i> Print / Save A4 Landscape PDF</button>
+    </div>
+</div>
+
+<div class="dashboard-container">
+    <!-- 1. HEADER SECTION -->
+    <div class="header-section">
+        <div class="header-title">
+            <i class="fa-solid fa-tower-observation"></i>
+            <div>
+                <h2>FERDOUS 6 WELL – 12¼" DRILLING RATE SUMMARY</h2>
+                <span class="fs-7">10 OCTOBER – 26 OCTOBER 2026</span>
+            </div>
+        </div>
+        <div class="header-stats">
+            <div class="stat-card">
+                <span>PLANNED TOTAL DEPTH</span>
+                <strong id="planned-depth-display">400 m</strong>
+            </div>
+            <div class="stat-card">
+                <span>CURRENT DEPTH</span>
+                <strong id="current-depth-display">354 m</strong>
+                <small id="depth-percentage" style="font-size:0.6rem;">(88.5% of plan)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div class="row g-3">
+        <!-- Well Profile Visual -->
+        <div class="col-md-2">
+            <h5 class="section-title"><i class="fa-solid fa-arrows-up-down"></i> WELL PROFILE</h5>
+            <div class="section-body">
+                <div class="well-vis">
+                    <i class="fa-solid fa-oil-well derrick-img"></i>
+                    <div>
+                        <small class="text-muted d-block text-center" style="font-size:0.65rem;">Current Depth</small>
+                        <span class="badge bg-primary" id="badge-cur-depth" style="font-size:0.75rem;">354 m</span>
+                    </div>
+                    <div class="well-bore">
+                        <div class="gravel-formation">
+                            GRAVEL FORMATION <br> 185 - 250 m
+                        </div>
+                        <div class="drill-bit">
+                            <i class="fa-solid fa-screwdriver"></i>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <small class="text-muted d-block" style="font-size:0.65rem;">Planned Depth</small>
+                        <strong id="label-planned-depth" style="font-size:0.8rem;">400 m</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Table -->
+        <div class="col-md-7">
+            <h5 class="section-title"><i class="fa-solid fa-table"></i> DAILY DRILLING PROGRESS (Editable)</h5>
+            <div class="section-body">
+                <div class="table-responsive-custom">
+                    <table class="table table-bordered table-custom" id="drilling-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Start Depth (m)</th>
+                                <th>End Depth (m)</th>
+                                <th>Depth Drilled (m)</th>
+                                <th>Time (hrs)</th>
+                                <th>NPT Time (hrs)</th>
+                                <th style="width: 25%;">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Editable Data Rows -->
+                            <tr><td><input value="10 Oct" /></td><td><input value="-" /></td><td><input value="-" /></td><td><input class="calc-drilled" value="0" type="number" /></td><td><input class="calc-time" value="9" type="number" /></td><td><input class="calc-npt" value="15" type="number" /></td><td><input value="Rat hole only." /></td></tr>
+                            <tr><td><input value="11 Oct" /></td><td><input value="0" /></td><td><input value="50" /></td><td><input class="calc-drilled" value="50" type="number" /></td><td><input class="calc-time" value="9" type="number" /></td><td><input class="calc-npt" value="15" type="number" /></td><td><input value="Start drilling 12¼\" from 0 to 50 m." /></td></tr>
+                            <tr><td><input value="12 Oct" /></td><td><input value="50" /></td><td><input value="140" /></td><td><input class="calc-drilled" value="90" type="number" /></td><td><input class="calc-time" value="24" type="number" /></td><td><input class="calc-npt" value="0" type="number" /></td><td><input value="-" /></td></tr>
+                            <tr><td><input value="13 Oct" /></td><td><input value="140" /></td><td><input value="190" /></td><td><input class="calc-drilled" value="50" type="number" /></td><td><input class="calc-time" value="24" type="number" /></td><td><input class="calc-npt" value="0" type="number" /></td><td><input value="-" /></td></tr>
+                            <tr><td><input value="14 Oct" /></td><td><input value="190" /></td><td><input value="200" /></td><td><input class="calc-drilled" value="10" type="number" /></td><td><input class="calc-time" value="21" type="number" /></td><td><input class="calc-npt" value="3" type="number" /></td><td><input value="Trip, mixing mud" /></td></tr>
+                            <tr><td><input value="15 Oct" /></td><td><input value="200" /></td><td><input value="220" /></td><td><input class="calc-drilled" value="20" type="number" /></td><td><input class="calc-time" value="20" type="number" /></td><td><input class="calc-npt" value="4" type="number" /></td><td><input value="Changed to used bit." /></td></tr>
+                            <tr><td><input value="16 Oct" /></td><td><input value="220" /></td><td><input value="224" /></td><td><input class="calc-drilled" value="4" type="number" /></td><td><input class="calc-time" value="6" type="number" /></td><td><input class="calc-npt" value="18" type="number" /></td><td><input value="Trip, Swivel maintenance" /></td></tr>
+                            <tr><td><input value="17 Oct" /></td><td><input value="224" /></td><td><input value="231" /></td><td><input class="calc-drilled" value="7" type="number" /></td><td><input class="calc-time" value="11" type="number" /></td><td><input class="calc-npt" value="17" type="number" /></td><td><input value="Mud pump maintenance" /></td></tr>
+                            <tr><td><input value="18 Oct" /></td><td><input value="231" /></td><td><input value="240" /></td><td><input class="calc-drilled" value="9" type="number" /></td><td><input class="calc-time" value="24" type="number" /></td><td><input class="calc-npt" value="0" type="number" /></td><td><input value="-" /></td></tr>
+                            <tr><td><input value="19 Oct" /></td><td><input value="240" /></td><td><input value="242" /></td><td><input class="calc-drilled" value="2" type="number" /></td><td><input class="calc-time" value="5" type="number" /></td><td><input class="calc-npt" value="19" type="number" /></td><td><input value="Changed to new bit." /></td></tr>
+                            <tr><td><input value="20 Oct" /></td><td><input value="242" /></td><td><input value="243" /></td><td><input class="calc-drilled" value="1" type="number" /></td><td><input class="calc-time" value="2" type="number" /></td><td><input class="calc-npt" value="22" type="number" /></td><td><input value="Trip, swivel stuck" /></td></tr>
+                            <tr><td><input value="21 Oct" /></td><td><input value="243" /></td><td><input value="246" /></td><td><input class="calc-drilled" value="3" type="number" /></td><td><input class="calc-time" value="2" type="number" /></td><td><input class="calc-npt" value="22" type="number" /></td><td><input value="Waiting swivel arrived." /></td></tr>
+                            <tr><td><input value="22 Oct" /></td><td><input value="246" /></td><td><input value="265" /></td><td><input class="calc-drilled" value="19" type="number" /></td><td><input class="calc-time" value="13" type="number" /></td><td><input class="calc-npt" value="11" type="number" /></td><td><input value="Swivel inspection." /></td></tr>
+                            <tr><td><input value="23 Oct" /></td><td><input value="265" /></td><td><input value="297" /></td><td><input class="calc-drilled" value="32" type="number" /></td><td><input class="calc-time" value="9" type="number" /></td><td><input class="calc-npt" value="15" type="number" /></td><td><input value="Mud pump maintenance" /></td></tr>
+                            <tr><td><input value="24 Oct" /></td><td><input value="297" /></td><td><input value="303" /></td><td><input class="calc-drilled" value="6" type="number" /></td><td><input class="calc-time" value="2" type="number" /></td><td><input class="calc-npt" value="22" type="number" /></td><td><input value="Mud pump maintenance" /></td></tr>
+                            <tr><td><input value="25 Oct" /></td><td><input value="303" /></td><td><input value="348" /></td><td><input class="calc-drilled" value="45" type="number" /></td><td><input class="calc-time" value="24" type="number" /></td><td><input class="calc-npt" value="0" type="number" /></td><td><input value="-" /></td></tr>
+                            <tr><td><input value="26 Oct" /></td><td><input value="348" /></td><td><input value="354" /></td><td><input class="calc-drilled" value="6" type="number" /></td><td><input class="calc-time" value="6" type="number" /></td><td><input class="calc-npt" value="18" type="number" /></td><td><input value="-" /></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Events Timeline -->
+        <div class="col-md-3">
+            <h5 class="section-title"><i class="fa-regular fa-calendar-check"></i> KEY EVENTS & NOTES</h5>
+            <div class="section-body">
+                <ul class="events-list" id="events-timeline">
+                    <li class="event-item">
+                        <div class="event-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
+                        <div class="event-content" contenteditable="true">
+                            <strong>10 Oct</strong>
+                            <p>Rat hole only.</p>
+                        </div>
+                    </li>
+                    <li class="event-item">
+                        <div class="event-icon"><i class="fa-solid fa-bore-hole"></i></div>
+                        <div class="event-content" contenteditable="true">
+                            <strong>11 Oct</strong>
+                            <p>Started drilling 12¼" from 0 to 50 m.</p>
+                        </div>
+                    </li>
+                    <li class="event-item">
+                        <div class="event-icon"><i class="fa-solid fa-mountain"></i></div>
+                        <div class="event-content" contenteditable="true">
+                            <strong>From 185 m</strong>
+                            <p>Gravel formation encountered (185 - 250 m).</p>
+                        </div>
+                    </li>
+                    <li class="event-item">
+                        <div class="event-icon"><i class="fa-solid fa-wrench"></i></div>
+                        <div class="event-content" contenteditable="true">
+                            <strong>15 Oct</strong>
+                            <p>Changed to used bit.</p>
+                        </div>
+                    </li>
+                    <li class="event-item">
+                        <div class="event-icon"><i class="fa-solid fa-circle-plus"></i></div>
+                        <div class="event-content" contenteditable="true">
+                            <strong>19 Oct</strong>
+                            <p>Changed to new bit.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION: KPIs AND CHARTS -->
+    <div class="row g-3">
+        <!-- KPIs Card -->
+        <div class="col-md-4">
+            <h5 class="section-title"><i class="fa-solid fa-gauge-high"></i> DRILLING RATE</h5>
+            <div class="section-body d-flex flex-column gap-2 justify-content-center">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="kpi-card">
+                            <small class="text-muted d-block">Total Drilled</small>
+                            <span class="kpi-val" id="total-drilled-card">354 m</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="kpi-card">
+                            <small class="text-muted d-block">Actual Drill Time</small>
+                            <span class="kpi-val" id="total-time-card">247 hrs</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card bg-white">
+                    <small class="text-muted d-block">Average Drilling Rate (ROP)</small>
+                    <span class="kpi-val text-success" id="avg-rop-card">1.43 m/hr</span>
+                    <small class="d-block text-muted" id="calc-formula">(354 m ÷ 247 hrs)</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- NPT & Drilling Time Comparison -->
+        <div class="col-md-3">
+            <h5 class="section-title"><i class="fa-regular fa-clock"></i> TIME COMPARISON</h5>
+            <div class="section-body">
+                <div class="bg-white p-2 border rounded d-flex flex-column justify-content-between align-items-center" style="height: 100%;">
+                    <canvas id="timePieChart" style="max-height: 110px; max-width: 140px;"></canvas>
+                    <div class="text-center mt-1" style="font-size: 0.7rem; width:100%;">
+                        <span class="badge bg-primary text-wrap mb-1" id="time-summary-drilling" style="font-size: 0.65rem;">Drilling: 145 hrs</span>
+                        <span class="badge bg-danger text-wrap" id="time-summary-npt" style="font-size: 0.65rem;">NPT: 102 hrs</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Visual representation of ROP vs NPT -->
+        <div class="col-md-5">
+            <h5 class="section-title"><i class="fa-solid fa-chart-line"></i> ROP vs. NPT TIME</h5>
+            <div class="section-body">
+                <div class="bg-white p-2 border rounded" style="height: 100%;">
+                    <canvas id="ropNptChart" style="max-height: 140px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let pieChart, comboChart;
+
+    // Trigger Calculations & Redraw Charts
+    function updateDashboard() {
+        let totalDrilled = 0;
+        let totalTime = 0;
+        let totalNpt = 0;
+        
+        const dates = [];
+        const ropValues = [];
+        const nptValues = [];
+
+        const rows = document.querySelectorAll("#drilling-table tbody tr");
+        rows.forEach(row => {
+            const inputs = row.querySelectorAll("input");
+            const date = inputs[0].value;
+            const drilled = parseFloat(inputs[3].value) || 0;
+            const time = parseFloat(inputs[4].value) || 0;
+            const npt = parseFloat(inputs[5].value) || 0;
+
+            totalDrilled += drilled;
+            totalTime += time;
+            totalNpt += npt;
+
+            // ROP (m/hr) = Drilled Depth / Drill Time
+            const ROP = time > 0 ? (drilled / time).toFixed(1) : 0;
+
+            dates.push(date);
+            ropValues.push(ROP);
+            nptValues.push(npt);
+        });
+
+        const overallTime = totalTime + totalNpt;
+
+        // update top metrics
+        document.getElementById("current-depth-display").innerText = totalDrilled + " m";
+        document.getElementById("badge-cur-depth").innerText = totalDrilled + " m";
+        document.getElementById("total-drilled-card").innerText = totalDrilled + " m";
+        document.getElementById("total-time-card").innerText = overallTime + " hrs";
+
+        const percent = ((totalDrilled / 400) * 100).toFixed(1);
+        document.getElementById("depth-percentage").innerText = `(${percent}% of plan)`;
+
+        const avgRop = overallTime > 0 ? (totalDrilled / overallTime).toFixed(2) : 0;
+        document.getElementById("avg-rop-card").innerText = avgRop + " m/hr";
+        document.getElementById("calc-formula").innerText = `(${totalDrilled} m ÷ ${overallTime} hrs)`;
+
+        // Percentages
+        const drillingPercent = overallTime > 0 ? ((totalTime / overallTime) * 100).toFixed(1) : 0;
+        const nptPercent = overallTime > 0 ? ((totalNpt / overallTime) * 100).toFixed(1) : 0;
+
+        document.getElementById("time-summary-drilling").innerText = `Drilling: ${totalTime} hrs (${drillingPercent}%)`;
+        document.getElementById("time-summary-npt").innerText = `NPT: ${totalNpt} hrs (${nptPercent}%)`;
+
+        // Update Charts
+        updateCharts(dates, ropValues, nptValues, totalTime, totalNpt);
+    }
+
+    function updateCharts(labels, rop, npt, actTime, nptTime) {
+        // Doughnut Time Chart
+        if (pieChart) pieChart.destroy();
+        const ctxPie = document.getElementById('timePieChart').getContext('2d');
+        pieChart = new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: ['Actual Drill Time', 'NPT (Non-Productive)'],
+                datasets: [{
+                    data: [actTime, nptTime],
+                    backgroundColor: ['#0b5394', '#cc0000'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Combo bar-line ROP vs NPT Chart
+        if (comboChart) comboChart.destroy();
+        const ctxCombo = document.getElementById('ropNptChart').getContext('2d');
+        comboChart = new Chart(ctxCombo, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'ROP (m/hr)',
+                        data: rop,
+                        backgroundColor: '#0b5394',
+                        yAxisID: 'y',
+                        order: 2
+                    },
+                    {
+                        label: 'NPT Time (hrs)',
+                        data: npt,
+                        borderColor: '#f6b26b',
+                        backgroundColor: '#f6b26b',
+                        type: 'line',
+                        tension: 0.2,
+                        yAxisID: 'y1',
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'ROP (m/hr)', font: { size: 8 } },
+                        ticks: { font: { size: 8 } }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'NPT (hrs)', font: { size: 8 } },
+                        ticks: { font: { size: 8 } }
+                    },
+                    x: {
+                        ticks: { font: { size: 7 } }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 8, font: { size: 8 } } }
+                }
+            }
+        });
+    }
+
+    // Attach Event Listeners to Inputs to trigger recalculations
+    document.querySelectorAll('#drilling-table input').forEach(input => {
+        input.addEventListener('input', updateDashboard);
+    });
+
+    // Initial load
+    window.onload = updateDashboard;
+</script>
+
+</body>
+</html>
